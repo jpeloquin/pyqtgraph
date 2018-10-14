@@ -1761,14 +1761,19 @@ class EllipseROI(ROI):
         
         p.drawEllipse(r)
         
-    def getArrayRegion(self, arr, img=None, axes=(0, 1), **kwds):
+    def getArrayRegion(self, arr, img=None, axes=(0, 1), returnMappedCoords=False, **kwds):
         """
         Return the result of ROI.getArrayRegion() masked by the elliptical shape
         of the ROI. Regions outside the ellipse are set to 0.
         """
         # Note: we could use the same method as used by PolyLineROI, but this
         # implementation produces a nicer mask.
-        arr = ROI.getArrayRegion(self, arr, img, axes, **kwds)
+        arr = ROI.getArrayRegion(self, arr, img, axes,
+                                 returnMappedCoords=returnMappedCoords,
+                                 **kwds)
+        if returnMappedCoords:
+            arr = arr[0]
+            arr_coords = arr[1]
         if arr is None or arr.shape[axes[0]] == 0 or arr.shape[axes[1]] == 0:
             return arr
         w = arr.shape[axes[0]]
@@ -1782,8 +1787,11 @@ class EllipseROI(ROI):
             mask = mask.T
         shape = [(n if i in axes else 1) for i,n in enumerate(arr.shape)]
         mask = mask.reshape(shape)
-        
-        return arr * mask
+
+        if returnMappedCoords:
+            return arr * mask, arr_coords
+        else:
+            return arr * mask
     
     def shape(self):
         if self.path is None:
